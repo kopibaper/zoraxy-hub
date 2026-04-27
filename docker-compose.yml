@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  zoraxyhub:
+    build: .
+    container_name: zoraxyhub
+    ports:
+      - "3000:3000"
+    volumes:
+      - zoraxyhub-data:/app/data
+    environment:
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=changeme
+      - JWT_SECRET=change-this-to-a-random-secret-at-least-32-chars
+      - MASTER_KEY=change-this-to-a-random-key-for-encryption
+      - DATABASE_PATH=/app/data/zoraxyhub.db
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+    restart: unless-stopped
+
+volumes:
+  zoraxyhub-data:
