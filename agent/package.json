@@ -1,0 +1,8 @@
+{
+  "name": "zoraxy-agent",
+  "version": "2.0.0",
+  "main": "zoraxy-agent.ts",
+  "scripts": {
+    "start": "bun run zoraxy-agent.ts"
+  }
+}
