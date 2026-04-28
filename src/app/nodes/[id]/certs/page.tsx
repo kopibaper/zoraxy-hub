@@ -123,30 +123,30 @@ export default function CertsPage({
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3 min-w-0">
             <Link href={`/nodes/${id}`}>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="shrink-0">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <div>
+            <div className="min-w-0">
               <h2 className="text-2xl font-bold tracking-tight">
                 Certificates
               </h2>
-              <p className="text-zinc-500 dark:text-zinc-400">
+              <p className="text-zinc-500 dark:text-zinc-400 truncate">
                 {node?.name ?? "Loading..."}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" onClick={() => setShowUploadDialog(true)}>
               <Upload className="h-4 w-4" />
-              Upload Certificate
+              <span className="hidden sm:inline">Upload</span> Certificate
             </Button>
             <Button onClick={() => setShowAcmeDialog(true)}>
               <ShieldCheck className="h-4 w-4" />
-              Obtain via ACME
+              <span className="hidden sm:inline">Obtain via</span> ACME
             </Button>
           </div>
         </div>

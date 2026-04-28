@@ -84,26 +84,26 @@ export default function NodeDetailPage({
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3 min-w-0">
             <Link href="/nodes">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="shrink-0">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <div>
-              <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold tracking-tight">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-2xl font-bold tracking-tight truncate">
                   {node.name}
                 </h2>
                 <NodeStatusBadge status={node.status} />
               </div>
-              <p className="text-zinc-500 dark:text-zinc-400">
+              <p className="text-zinc-500 dark:text-zinc-400 truncate">
                 {node.protocol}://{node.host}:{node.port}
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"

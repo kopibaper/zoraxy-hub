@@ -192,21 +192,21 @@ export default function ProxiesPage({
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3 min-w-0">
             <Link href={`/nodes/${id}`}>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="shrink-0">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <div>
+            <div className="min-w-0">
               <h2 className="text-2xl font-bold tracking-tight">Proxy Rules</h2>
-              <p className="text-zinc-500 dark:text-zinc-400">
+              <p className="text-zinc-500 dark:text-zinc-400 truncate">
                 {node?.name ?? "Loading..."}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               onClick={() => void refetch()}
@@ -271,122 +271,124 @@ export default function ProxiesPage({
           <div className="space-y-3">
             {filtered.map((proxy) => (
               <Card key={proxy.RootOrMatchingDomain}>
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                        proxy.Disabled
-                          ? "bg-zinc-100 dark:bg-zinc-800"
-                          : "bg-emerald-100 dark:bg-emerald-900/30"
-                      }`}
-                    >
-                      <Globe
-                        className={`h-5 w-5 ${
+                <CardContent className="p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
                           proxy.Disabled
-                            ? "text-zinc-400"
-                            : "text-emerald-600 dark:text-emerald-400"
+                            ? "bg-zinc-100 dark:bg-zinc-800"
+                            : "bg-emerald-100 dark:bg-emerald-900/30"
                         }`}
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium font-mono text-sm">
-                          {proxy.RootOrMatchingDomain}
-                        </p>
-                        <Badge
-                          variant={proxy.Disabled ? "secondary" : "success"}
-                          className="text-[10px]"
-                        >
-                          {proxy.Disabled ? "Disabled" : "Active"}
-                        </Badge>
-                        <Badge variant="outline" className="text-[10px]">
-                          {proxy.ProxyType === "subd" ? "Subdomain" : "Virtual Dir"}
-                        </Badge>
+                      >
+                        <Globe
+                          className={`h-5 w-5 ${
+                            proxy.Disabled
+                              ? "text-zinc-400"
+                              : "text-emerald-600 dark:text-emerald-400"
+                          }`}
+                        />
                       </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                        <span>
-                          {proxy.ActiveOrigins?.length ?? 0} origin
-                          {(proxy.ActiveOrigins?.length ?? 0) !== 1 ? "s" : ""}
-                        </span>
-                        <span>
-                          {proxy.VirtualDirectories?.length ?? 0} virtual director
-                          {(proxy.VirtualDirectories?.length ?? 0) !== 1 ? "ies" : "y"}
-                        </span>
-                        <span>
-                          {headerRuleCount(proxy.HeaderRewriteRules)} header rule
-                          {headerRuleCount(proxy.HeaderRewriteRules) !== 1 ? "s" : ""}
-                        </span>
-                        {proxy.ActiveOrigins?.[0] && (
-                          <span className="font-mono">
-                            {proxy.ActiveOrigins[0].OriginIpOrDomain}
-                          </span>
-                        )}
-                        {proxy.UseActiveLoadBalance && (
-                          <Badge variant="secondary" className="text-[10px]">
-                            Load Balanced
-                          </Badge>
-                        )}
-                        {proxy.UseStickySession && (
-                          <Badge variant="secondary" className="text-[10px]">
-                            Sticky
-                          </Badge>
-                        )}
-                        {(proxy.Tags ?? []).map((tag) => (
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium font-mono text-sm truncate">
+                            {proxy.RootOrMatchingDomain}
+                          </p>
                           <Badge
-                            key={tag}
-                            variant="outline"
-                            className="inline-flex items-center gap-1 text-[10px]"
+                            variant={proxy.Disabled ? "secondary" : "success"}
+                            className="text-[10px]"
                           >
-                            <Tag className="h-3 w-3" />
-                            {tag}
+                            {proxy.Disabled ? "Disabled" : "Active"}
                           </Badge>
-                        ))}
+                          <Badge variant="outline" className="text-[10px]">
+                            {proxy.ProxyType === "subd" ? "Subdomain" : "Virtual Dir"}
+                          </Badge>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                          <span>
+                            {proxy.ActiveOrigins?.length ?? 0} origin
+                            {(proxy.ActiveOrigins?.length ?? 0) !== 1 ? "s" : ""}
+                          </span>
+                          <span>
+                            {proxy.VirtualDirectories?.length ?? 0} virtual director
+                            {(proxy.VirtualDirectories?.length ?? 0) !== 1 ? "ies" : "y"}
+                          </span>
+                          <span>
+                            {headerRuleCount(proxy.HeaderRewriteRules)} header rule
+                            {headerRuleCount(proxy.HeaderRewriteRules) !== 1 ? "s" : ""}
+                          </span>
+                          {proxy.ActiveOrigins?.[0] && (
+                            <span className="font-mono">
+                              {proxy.ActiveOrigins[0].OriginIpOrDomain}
+                            </span>
+                          )}
+                          {proxy.UseActiveLoadBalance && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              Load Balanced
+                            </Badge>
+                          )}
+                          {proxy.UseStickySession && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              Sticky
+                            </Badge>
+                          )}
+                          {(proxy.Tags ?? []).map((tag) => (
+                            <Badge
+                              key={tag}
+                              variant="outline"
+                              className="inline-flex items-center gap-1 text-[10px]"
+                            >
+                              <Tag className="h-3 w-3" />
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Link
-                      href={`/nodes/${id}/proxies/${encodeURIComponent(
-                        proxy.RootOrMatchingDomain
-                      )}`}
-                    >
-                      <Button variant="ghost" size="icon" title="Details">
-                        <ExternalLink className="h-4 w-4" />
+                    <div className="flex items-center gap-1 shrink-0 self-end sm:self-center">
+                      <Link
+                        href={`/nodes/${id}/proxies/${encodeURIComponent(
+                          proxy.RootOrMatchingDomain
+                        )}`}
+                      >
+                        <Button variant="ghost" size="icon" title="Details">
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Edit"
+                        onClick={() => handleOpenEdit(proxy.RootOrMatchingDomain)}
+                      >
+                        <Pencil className="h-4 w-4" />
                       </Button>
-                    </Link>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="Edit"
-                      onClick={() => handleOpenEdit(proxy.RootOrMatchingDomain)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title={proxy.Disabled ? "Enable" : "Disable"}
-                      onClick={() =>
-                        toggleProxy.mutate({
-                          domain: proxy.RootOrMatchingDomain,
-                          enabled: proxy.Disabled,
-                        })
-                      }
-                    >
-                      {proxy.Disabled ? (
-                        <Power className="h-4 w-4 text-emerald-500" />
-                      ) : (
-                        <PowerOff className="h-4 w-4 text-amber-500" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="Delete"
-                      onClick={() => handleDelete(proxy.RootOrMatchingDomain)}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title={proxy.Disabled ? "Enable" : "Disable"}
+                        onClick={() =>
+                          toggleProxy.mutate({
+                            domain: proxy.RootOrMatchingDomain,
+                            enabled: proxy.Disabled,
+                          })
+                        }
+                      >
+                        {proxy.Disabled ? (
+                          <Power className="h-4 w-4 text-emerald-500" />
+                        ) : (
+                          <PowerOff className="h-4 w-4 text-amber-500" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Delete"
+                        onClick={() => handleDelete(proxy.RootOrMatchingDomain)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
