@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth/middleware";
 import { errorResponse, NotFoundError, ValidationError } from "@/lib/errors";

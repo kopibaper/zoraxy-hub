@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest } from "next/server";
 import { createToken, getAdminCredentials, verifyPassword } from "@/lib/auth/session";
 import { errorResponse, ValidationError, AuthenticationError } from "@/lib/errors";
