@@ -1,0 +1,20 @@
+{
+  "apiKey": "zhub_ak_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "listenAddr": "0.0.0.0",
+  "listenPort": 9191,
+  "tls": {
+    "cert": "/etc/zoraxy-agent/cert.pem",
+    "key": "/etc/zoraxy-agent/key.pem"
+  },
+  "zoraxy": {
+    "host": "localhost",
+    "port": 8000,
+    "username": "admin",
+    "password": "password"
+  },
+  "zoraxyDataDir": "/opt/zoraxy",
+  "docker": {
+    "enabled": true,
+    "containerName": "zoraxy"
+  }
+}

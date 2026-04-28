@@ -1,0 +1,4 @@
+zoraxy-agent
+zoraxy-agent-*
+*.exe
+agent.json

@@ -1,0 +1,21 @@
+[Unit]
+Description=Zoraxy Agent - Remote VPS management for ZoraxyHub
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/zoraxy-agent
+ExecStart=/opt/zoraxy-agent/zoraxy-agent
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=zoraxy-agent
+
+[Install]
+WantedBy=multi-user.target
