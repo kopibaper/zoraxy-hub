@@ -42,7 +42,7 @@ export default function AuditPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-zinc-500">Filter:</span>
           {["", "node", "proxy", "cert", "template", "system"].map((type) => (
             <Button
@@ -76,9 +76,9 @@ export default function AuditPage() {
                   {entries.map((entry) => (
                     <div
                       key={entry.id}
-                      className="flex items-center justify-between px-4 py-3"
+                      className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Badge
                           variant={
                             entry.result === "success" ? "success" : "danger"
@@ -104,7 +104,7 @@ export default function AuditPage() {
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-zinc-500">
+                      <span className="text-xs text-zinc-500 shrink-0">
                         {new Date(entry.createdAt).toLocaleString()}
                       </span>
                     </div>
@@ -113,7 +113,7 @@ export default function AuditPage() {
               </CardContent>
             </Card>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-zinc-500">
                 Showing {(page - 1) * pageSize + 1}–
                 {Math.min(page * pageSize, total)} of {total} entries
@@ -128,7 +128,7 @@ export default function AuditPage() {
                   <ChevronLeft className="h-4 w-4" />
                   Previous
                 </Button>
-                <span className="text-sm text-zinc-500">
+                <span className="text-sm text-zinc-500 whitespace-nowrap">
                   Page {page} of {totalPages}
                 </span>
                 <Button
