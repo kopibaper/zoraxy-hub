@@ -83,7 +83,7 @@ export default function TemplatesPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
               Config Templates
@@ -92,7 +92,7 @@ export default function TemplatesPage() {
               Reusable configuration templates for deploying to multiple nodes
             </p>
           </div>
-          <Button onClick={() => setShowCreateDialog(true)}>
+          <Button onClick={() => setShowCreateDialog(true)} className="shrink-0">
             <Plus className="h-4 w-4" />
             New Template
           </Button>

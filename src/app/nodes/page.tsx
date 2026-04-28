@@ -24,7 +24,7 @@ export default function NodesPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Nodes</h2>
             <p className="text-zinc-500 dark:text-zinc-400">

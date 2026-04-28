@@ -515,14 +515,15 @@ export default function StatsPage({
                     ) : (
                       <div className="h-[420px] rounded-lg bg-zinc-100 p-2 dark:bg-zinc-900">
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={topUrlsData} layout="vertical" margin={{ left: 30 }}>
+                          <BarChart data={topUrlsData} layout="vertical" margin={{ left: 10 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
                             <XAxis type="number" stroke="#a1a1aa" />
                             <YAxis
                               dataKey="name"
                               type="category"
-                              width={220}
+                              width={120}
                               stroke="#a1a1aa"
+                              tick={{ fontSize: 11 }}
                             />
                             <Tooltip
                               labelFormatter={(_, payload) => {

@@ -2,7 +2,7 @@
 
 import { use, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Copy, Download, GitCompare, Upload } from "lucide-react";
+import { ArrowLeft, Archive, Copy, Download, FileArchive, GitCompare, Upload } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -197,7 +197,7 @@ export default function NodeConfigSyncPage({
         </div>
 
         <Tabs defaultValue="export">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 gap-1 p-1 md:grid-cols-4">
             <TabsTrigger value="export">Export</TabsTrigger>
             <TabsTrigger value="import">Import</TabsTrigger>
             <TabsTrigger value="compare">Compare</TabsTrigger>
