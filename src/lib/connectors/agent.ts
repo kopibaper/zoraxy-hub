@@ -175,7 +175,26 @@ export class AgentConnector implements INodeConnector {
   }
 
   async getProxyDetail(domain: string): Promise<ZoraxyProxyEntry> {
-    return this.rpc<ZoraxyProxyEntry>("proxy.detail", { domain });
+    // Read config file directly — Zoraxy's /api/proxy/detail requires auth/CSRF and is unreliable via agent
+    const sanitized = domain
+      .replace(/\*/g, "(ST)")
+      .replace(/\?/g, "(QM)")
+      .replace(/\[/g, "(OB)")
+      .replace(/\]/g, "(CB)")
+      .replace(/#/g, "(HT)");
+    const candidates = [
+      `config/conf/proxy/${sanitized}.config`,
+      `conf/proxy/${sanitized}.config`,
+    ];
+    for (const configPath of candidates) {
+      try {
+        const content = await this.readConfigFile(configPath);
+        return JSON.parse(content) as ZoraxyProxyEntry;
+      } catch {
+        continue;
+      }
+    }
+    throw new Error(`Proxy config file not found for domain: ${domain}`);
   }
 
   async addProxyRule(

@@ -125,7 +125,7 @@ export class ZoraxyClient {
   async getProxyDetail(rootDomain: string): Promise<ZoraxyProxyEntry> {
     return this.request<ZoraxyProxyEntry>("POST", "/api/proxy/detail", {
       type: "host",
-      rootname: rootDomain,
+      epname: rootDomain,
     });
   }
 
@@ -158,7 +158,7 @@ export class ZoraxyClient {
 
   async editProxyRule(rootDomain: string, updates: Record<string, unknown>): Promise<void> {
     await this.request("POST", "/api/proxy/edit", {
-      ep: rootDomain,
+      rootname: rootDomain,
       ...updates,
     });
   }

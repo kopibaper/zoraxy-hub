@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   Hexagon,
+  Terminal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/nodes", label: "Nodes", icon: Server },
   { href: "/templates", label: "Templates", icon: FileCode2 },
   { href: "/bulk", label: "Bulk Operations", icon: Layers },
+  { href: "/agent-install", label: "Agent Installer", icon: Terminal },
   { href: "/audit", label: "Audit Log", icon: ScrollText },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

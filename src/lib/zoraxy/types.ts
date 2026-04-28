@@ -27,10 +27,20 @@ export interface ZoraxyVirtualDirectory {
 }
 
 export interface ZoraxyHeaderRewriteRule {
-  Direction: string;
+  Direction: string | number;
   Key: string;
   Value: string;
   IsRemove: boolean;
+}
+
+export interface ZoraxyHeaderRewriteRules {
+  UserDefinedHeaders: ZoraxyHeaderRewriteRule[] | null;
+  RequestHostOverwrite: string;
+  HSTSMaxAge: number;
+  EnablePermissionPolicyHeader: boolean;
+  PermissionPolicy: unknown;
+  DisableHopByHopHeaderRemoval: boolean;
+  DisableUserAgentHeaderRemoval: boolean;
 }
 
 export interface ZoraxyProxyEntry {
@@ -45,7 +55,7 @@ export interface ZoraxyProxyEntry {
   BypassGlobalTLS: boolean;
   Tags: string[];
   VirtualDirectories: ZoraxyVirtualDirectory[];
-  HeaderRewriteRules: ZoraxyHeaderRewriteRule[];
+  HeaderRewriteRules: ZoraxyHeaderRewriteRules | ZoraxyHeaderRewriteRule[] | null;
 }
 
 export interface ZoraxyOrigin {

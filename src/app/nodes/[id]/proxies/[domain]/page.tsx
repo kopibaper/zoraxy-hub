@@ -5,13 +5,19 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ArrowLeft,
+  ArrowUpDown,
   Check,
   Code,
+  Globe,
+  Layers,
+  Lock,
   Pencil,
   Plus,
   RotateCcw,
   Save,
   Server,
+  Shield,
+  Tag,
   Trash2,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -40,6 +46,7 @@ import { useNode } from "@/hooks/use-nodes";
 import { useApi } from "@/hooks/use-api";
 import type {
   ZoraxyHeaderRewriteRule,
+  ZoraxyHeaderRewriteRules,
   ZoraxyOrigin,
   ZoraxyVirtualDirectory,
 } from "@/lib/zoraxy/types";
@@ -50,6 +57,32 @@ function normalizeOrigins(proxyOrigins: ZoraxyOrigin[] | undefined): ZoraxyOrigi
     ...origin,
     Disabled: !!origin.Disabled,
   }));
+}
+
+/**
+ * Extract the flat array of header rewrite rules from the proxy data.
+ * Zoraxy returns HeaderRewriteRules as an object with a UserDefinedHeaders array,
+ * but the type system previously assumed it was a flat array.
+ */
+function extractHeaderRules(
+  raw: ZoraxyHeaderRewriteRules | ZoraxyHeaderRewriteRule[] | null | undefined
+): ZoraxyHeaderRewriteRule[] {
+  if (!raw) return [];
+  // Already a flat array (legacy / normalised)
+  if (Array.isArray(raw)) return raw;
+  // Object form from Zoraxy API — pull UserDefinedHeaders
+  if (typeof raw === "object" && "UserDefinedHeaders" in raw) {
+    return Array.isArray(raw.UserDefinedHeaders) ? raw.UserDefinedHeaders : [];
+  }
+  return [];
+}
+
+/** Map Zoraxy numeric direction (0 = upstream/request, 1 = downstream/response) to a label */
+function directionLabel(direction: string | number): string {
+  if (direction === 0 || direction === "0") return "upstream";
+  if (direction === 1 || direction === "1") return "downstream";
+  if (typeof direction === "string") return direction;
+  return String(direction);
 }
 
 export default function ProxyDetailPage({
@@ -100,6 +133,11 @@ export default function ProxyDetailPage({
   });
 
   const [showAddHeaderDialog, setShowAddHeaderDialog] = useState(false);
+  const [showEditHeaderDialog, setShowEditHeaderDialog] = useState(false);
+  const [editingHeaderOriginal, setEditingHeaderOriginal] = useState<{
+    direction: string;
+    key: string;
+  } | null>(null);
   const [headerForm, setHeaderForm] = useState({
     direction: "upstream",
     key: "",
@@ -169,7 +207,19 @@ export default function ProxyDetailPage({
     if (rawJsonError) return;
     try {
       const parsed = JSON.parse(rawJson);
-      await editProxy.mutateAsync(parsed);
+
+      // Map PascalCase (Zoraxy) → camelCase (proxyRuleUpdateSchema)
+      const update: Record<string, unknown> = {};
+      if ("Disabled" in parsed) update.disabled = parsed.Disabled;
+      if ("UseStickySession" in parsed) update.useStickySession = parsed.UseStickySession;
+      if ("UseActiveLoadBalance" in parsed) update.useActiveLoadBalance = parsed.UseActiveLoadBalance;
+      if ("BypassGlobalTLS" in parsed) update.bypassGlobalTLS = parsed.BypassGlobalTLS;
+      if ("Tags" in parsed) update.tags = parsed.Tags;
+      if ("MatchingDomainAlias" in parsed) update.matchingDomainAlias = parsed.MatchingDomainAlias;
+      if ("ActiveOrigins" in parsed) update.activeOrigins = parsed.ActiveOrigins;
+      if ("InactiveOrigins" in parsed) update.inactiveOrigins = parsed.InactiveOrigins;
+
+      await editProxy.mutateAsync(update);
       await refreshProxyData();
       setRawJsonDirty(false);
       setRawJsonSaved(true);
@@ -357,11 +407,33 @@ export default function ProxyDetailPage({
   };
 
   const handleDeleteHeaderRule = async (rule: ZoraxyHeaderRewriteRule) => {
-    if (!confirm(`Delete header rule "${rule.Direction}: ${rule.Key}"?`)) return;
+    const label = directionLabel(rule.Direction);
+    if (!confirm(`Delete header rule "${label}: ${rule.Key}"?`)) return;
     await removeHeaderMutation.mutateAsync({
-      direction: rule.Direction,
+      direction: label,
       key: rule.Key,
     });
+  };
+
+  const handleEditHeaderRule = (rule: ZoraxyHeaderRewriteRule) => {
+    const label = directionLabel(rule.Direction);
+    setEditingHeaderOriginal({ direction: label, key: rule.Key });
+    setHeaderForm({
+      direction: label,
+      key: rule.Key,
+      value: rule.Value,
+      isRemove: rule.IsRemove,
+    });
+    setShowEditHeaderDialog(true);
+  };
+
+  const handleSaveHeaderEdit = async () => {
+    if (!editingHeaderOriginal) return;
+    await removeHeaderMutation.mutateAsync(editingHeaderOriginal);
+    await addHeaderMutation.mutateAsync(headerForm);
+    setShowEditHeaderDialog(false);
+    setEditingHeaderOriginal(null);
+    setHeaderForm({ direction: "upstream", key: "", value: "", isRemove: false });
   };
 
   if (isLoading) {
@@ -471,10 +543,228 @@ export default function ProxyDetailPage({
 
           <TabsContent value="overview">
             <div className="space-y-4">
+              {/* Domain & Aliases */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Globe className="h-4 w-4" />
+                    Domain &amp; Aliases
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-zinc-500">Primary Domain</span>
+                    <span className="font-mono text-sm font-medium">{proxy.RootOrMatchingDomain}</span>
+                  </div>
+                  {aliases.length > 0 && (
+                    <div>
+                      <span className="text-sm text-zinc-500">Aliases</span>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {aliases.map((alias) => (
+                          <Badge key={alias} variant="outline" className="font-mono text-xs">
+                            {alias}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Upstreams summary */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Server className="h-4 w-4" />
+                    Upstreams
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {upstreamRows.length > 0 ? (
+                    <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                      {upstreamRows.map((origin) => (
+                        <div
+                          key={`overview-${origin.OriginIpOrDomain}`}
+                          className="flex items-center justify-between py-2 first:pt-0 last:pb-0"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm">{origin.OriginIpOrDomain}</span>
+                            {origin.RequireTLS && (
+                              <Lock className="h-3 w-3 text-emerald-500" />
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-zinc-400">w:{origin.Weight}</span>
+                            <Badge
+                              variant={origin.Disabled ? "secondary" : "success"}
+                              className="text-[10px]"
+                            >
+                              {origin.Disabled ? "Disabled" : "Active"}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-zinc-500">No upstreams configured</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Routing & Load Balancing */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <ArrowUpDown className="h-4 w-4" />
+                    Routing &amp; Load Balancing
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="flex items-center justify-between rounded-lg border border-zinc-100 px-3 py-2 dark:border-zinc-800">
+                      <span className="text-sm text-zinc-500">Load Balance</span>
+                      <Badge variant={proxy.UseActiveLoadBalance ? "success" : "secondary"} className="text-[10px]">
+                        {proxy.UseActiveLoadBalance ? "Enabled" : "Disabled"}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg border border-zinc-100 px-3 py-2 dark:border-zinc-800">
+                      <span className="text-sm text-zinc-500">Sticky Session</span>
+                      <Badge variant={proxy.UseStickySession ? "success" : "secondary"} className="text-[10px]">
+                        {proxy.UseStickySession ? "Enabled" : "Disabled"}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg border border-zinc-100 px-3 py-2 dark:border-zinc-800">
+                      <span className="text-sm text-zinc-500">Bypass Global TLS</span>
+                      <Badge variant={proxy.BypassGlobalTLS ? "warning" : "secondary"} className="text-[10px]">
+                        {proxy.BypassGlobalTLS ? "Yes" : "No"}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between rounded-lg border border-zinc-100 px-3 py-2 dark:border-zinc-800">
+                      <span className="text-sm text-zinc-500">Status</span>
+                      <Badge variant={proxy.Disabled ? "danger" : "success"} className="text-[10px]">
+                        {proxy.Disabled ? "Disabled" : "Active"}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Header Rewrite summary */}
+              {(() => {
+                const headerRules = extractHeaderRules(proxy.HeaderRewriteRules);
+                const headerObj =
+                  proxy.HeaderRewriteRules &&
+                  !Array.isArray(proxy.HeaderRewriteRules) &&
+                  typeof proxy.HeaderRewriteRules === "object"
+                    ? (proxy.HeaderRewriteRules as ZoraxyHeaderRewriteRules)
+                    : null;
+                const hostOverwrite = headerObj?.RequestHostOverwrite;
+                const hstsAge = headerObj?.HSTSMaxAge;
+                const hasAnything = headerRules.length > 0 || hostOverwrite || (hstsAge && hstsAge > 0);
+
+                return hasAnything ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Shield className="h-4 w-4" />
+                        Header Rewrite Rules
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {hostOverwrite && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-zinc-500">Host Override</span>
+                          <span className="font-mono text-sm">{hostOverwrite}</span>
+                        </div>
+                      )}
+                      {hstsAge != null && hstsAge > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-zinc-500">HSTS Max-Age</span>
+                          <span className="font-mono text-sm">{hstsAge}s</span>
+                        </div>
+                      )}
+                      {headerRules.length > 0 && (
+                        <div>
+                          <span className="text-sm text-zinc-500">
+                            {headerRules.length} custom header{headerRules.length !== 1 ? "s" : ""}
+                          </span>
+                          <div className="mt-1.5 space-y-1">
+                            {headerRules.slice(0, 5).map((rule) => (
+                              <div
+                                key={`${rule.Direction}-${rule.Key}`}
+                                className="flex items-center gap-2 rounded border border-zinc-100 px-2 py-1 text-xs dark:border-zinc-800"
+                              >
+                                <Badge variant="outline" className="text-[10px]">
+                                  {directionLabel(rule.Direction)}
+                                </Badge>
+                                <span className="font-mono font-medium">{rule.Key}</span>
+                                {rule.IsRemove ? (
+                                  <Badge variant="danger" className="ml-auto text-[10px]">remove</Badge>
+                                ) : (
+                                  <span className="ml-auto truncate text-zinc-400 max-w-[200px]">{rule.Value}</span>
+                                )}
+                              </div>
+                            ))}
+                            {headerRules.length > 5 && (
+                              <p className="text-xs text-zinc-400">
+                                +{headerRules.length - 5} more — see Headers tab
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ) : null;
+              })()}
+
+              {/* Virtual Directories summary */}
+              {proxy.VirtualDirectories && proxy.VirtualDirectories.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Layers className="h-4 w-4" />
+                      Virtual Directories
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                      {proxy.VirtualDirectories.map((vdir: ZoraxyVirtualDirectory) => (
+                        <div
+                          key={vdir.MatchingPath}
+                          className="flex items-center justify-between py-2 first:pt-0 last:pb-0"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm">{vdir.MatchingPath}</span>
+                            <span className="text-zinc-400">→</span>
+                            <span className="font-mono text-sm">{vdir.Domain}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            {vdir.RequireTLS && (
+                              <Lock className="h-3 w-3 text-emerald-500" />
+                            )}
+                            <Badge
+                              variant={vdir.Disabled ? "secondary" : "success"}
+                              className="text-[10px]"
+                            >
+                              {vdir.Disabled ? "Disabled" : "Active"}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Tags */}
               {proxy.Tags && proxy.Tags.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Tags</CardTitle>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Tag className="h-4 w-4" />
+                      Tags
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap gap-2">
@@ -487,20 +777,6 @@ export default function ProxyDetailPage({
                   </CardContent>
                 </Card>
               )}
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <CardTitle className="text-base">Configuration Preview</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <pre className="max-h-96 overflow-auto rounded-lg bg-zinc-100 p-4 text-xs dark:bg-zinc-900">
-                    {JSON.stringify(proxy, null, 2)}
-                  </pre>
-                  <p className="mt-3 text-xs text-zinc-500">
-                    Use the <strong>Raw Editor</strong> tab to edit the full JSON configuration directly.
-                  </p>
-                </CardContent>
-              </Card>
             </div>
           </TabsContent>
 
@@ -639,33 +915,61 @@ export default function ProxyDetailPage({
                 </Button>
               </CardHeader>
               <CardContent>
-                {proxy.HeaderRewriteRules && proxy.HeaderRewriteRules.length > 0 ? (
-                  <div className="space-y-2">
-                    {proxy.HeaderRewriteRules.map((rule: ZoraxyHeaderRewriteRule, index) => (
-                      <div
-                        key={`${rule.Direction}-${rule.Key}-${index}`}
-                        className="flex items-center justify-between rounded-lg border border-zinc-200 p-3 dark:border-zinc-800"
-                      >
-                        <div className="font-mono text-sm">
-                          <span className="text-zinc-500">{rule.Direction}:</span>{" "}
-                          <span className="font-medium">{rule.Key}</span>
-                          {!rule.IsRemove && (
-                            <>
-                              {" = "}
-                              <span className="text-emerald-600 dark:text-emerald-400">{rule.Value}</span>
-                            </>
-                          )}
-                          {rule.IsRemove && <Badge className="ml-2" variant="danger">Remove</Badge>}
+                {(() => {
+                  const headerRules = extractHeaderRules(proxy.HeaderRewriteRules);
+                  const hostOverwrite =
+                    proxy.HeaderRewriteRules &&
+                    !Array.isArray(proxy.HeaderRewriteRules) &&
+                    typeof proxy.HeaderRewriteRules === "object" &&
+                    "RequestHostOverwrite" in proxy.HeaderRewriteRules
+                      ? (proxy.HeaderRewriteRules as ZoraxyHeaderRewriteRules).RequestHostOverwrite
+                      : null;
+
+                  if (headerRules.length === 0 && !hostOverwrite) {
+                    return (
+                      <p className="py-4 text-center text-sm text-zinc-500">No header rewrite rules</p>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-2">
+                      {hostOverwrite && (
+                        <div className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+                          <div className="font-mono text-sm">
+                            <span className="text-zinc-500">Host Override:</span>{" "}
+                            <span className="text-emerald-600 dark:text-emerald-400">{hostOverwrite}</span>
+                          </div>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteHeaderRule(rule)}>
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="py-4 text-center text-sm text-zinc-500">No header rewrite rules</p>
-                )}
+                      )}
+                      {headerRules.map((rule: ZoraxyHeaderRewriteRule, index) => (
+                        <div
+                          key={`${rule.Direction}-${rule.Key}-${index}`}
+                          className="flex items-center justify-between rounded-lg border border-zinc-200 p-3 dark:border-zinc-800"
+                        >
+                          <div className="font-mono text-sm">
+                            <span className="text-zinc-500">{directionLabel(rule.Direction)}:</span>{" "}
+                            <span className="font-medium">{rule.Key}</span>
+                            {!rule.IsRemove && (
+                              <>
+                                {" = "}
+                                <span className="text-emerald-600 dark:text-emerald-400">{rule.Value}</span>
+                              </>
+                            )}
+                            {rule.IsRemove && <Badge className="ml-2" variant="danger">Remove</Badge>}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => handleEditHeaderRule(rule)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleDeleteHeaderRule(rule)}>
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>
@@ -1084,6 +1388,62 @@ export default function ProxyDetailPage({
                 disabled={!headerForm.key || addHeaderMutation.isPending}
               >
                 {addHeaderMutation.isPending ? "Adding..." : "Add Header Rule"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showEditHeaderDialog} onOpenChange={setShowEditHeaderDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Header Rule</DialogTitle>
+              <DialogDescription>Update the header rewrite rule.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium">Direction</label>
+                <select
+                  className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-800 dark:bg-zinc-950"
+                  value={headerForm.direction}
+                  onChange={(e) =>
+                    setHeaderForm((prev) => ({ ...prev, direction: e.target.value }))
+                  }
+                >
+                  <option value="upstream">upstream</option>
+                  <option value="downstream">downstream</option>
+                </select>
+              </div>
+              <Input
+                placeholder="X-Forwarded-For"
+                value={headerForm.key}
+                onChange={(e) => setHeaderForm((prev) => ({ ...prev, key: e.target.value }))}
+              />
+              <Input
+                placeholder="Header value"
+                value={headerForm.value}
+                onChange={(e) => setHeaderForm((prev) => ({ ...prev, value: e.target.value }))}
+                disabled={headerForm.isRemove}
+              />
+              <label className="flex items-center justify-between text-sm">
+                Is Remove Rule
+                <input
+                  type="checkbox"
+                  checked={headerForm.isRemove}
+                  onChange={(e) =>
+                    setHeaderForm((prev) => ({ ...prev, isRemove: e.target.checked }))
+                  }
+                />
+              </label>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEditHeaderDialog(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveHeaderEdit}
+                disabled={!headerForm.key || removeHeaderMutation.isPending || addHeaderMutation.isPending}
+              >
+                {removeHeaderMutation.isPending || addHeaderMutation.isPending ? "Saving..." : "Save"}
               </Button>
             </DialogFooter>
           </DialogContent>

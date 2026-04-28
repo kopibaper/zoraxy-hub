@@ -335,7 +335,7 @@ func (c *ZoraxyClient) Call(method string, params map[string]interface{}) (json.
 		return c.request("GET", "/api/proxy/list?type=host", nil, false)
 	case "proxy.detail":
 		return c.request("POST", "/api/proxy/detail", map[string]string{
-			"type": "host", "rootname": str(params, "domain"),
+			"type": "host", "epname": str(params, "domain"),
 		}, false)
 	case "proxy.add":
 		return c.request("POST", "/api/proxy/add", map[string]string{
@@ -351,7 +351,7 @@ func (c *ZoraxyClient) Call(method string, params map[string]interface{}) (json.
 			"ep": str(params, "domain"), "enabled": boolStr(params, "enabled"),
 		}, false)
 	case "proxy.edit":
-		form := map[string]string{"ep": str(params, "domain")}
+		form := map[string]string{"rootname": str(params, "domain")}
 		if updates, ok := params["updates"].(map[string]interface{}); ok {
 			for k, v := range updates {
 				form[k] = fmt.Sprintf("%v", v)
