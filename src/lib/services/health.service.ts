@@ -58,7 +58,7 @@ export async function checkAllNodesHealth(): Promise<
   NodeHealthPollResult[]
 > {
   const allNodes = await db.select().from(nodes);
-  return Promise.all(
+  const results = await Promise.all(
     allNodes.map(async (node) => {
       const checkedAt = new Date().toISOString();
       let status: NodeStatus = "offline";

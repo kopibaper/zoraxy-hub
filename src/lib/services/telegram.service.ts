@@ -479,7 +479,7 @@ async function handleProxies(
 
   const lines = rules.slice(0, 20).map((rule) => {
     const enabled = rule.Disabled !== true ? "\u2705" : "\u274c";
-    const domain = rule.RootOrMatchingDomain || rule.MatchingDomain || "unknown";
+    const domain = rule.RootOrMatchingDomain || "unknown";
     return `${enabled} <code>${escapeHtml(domain)}</code>`;
   });
 
