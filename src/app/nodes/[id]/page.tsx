@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -17,14 +17,31 @@ import {
   Copy,
   Container,
   Folder,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { NodeStatusBadge } from "@/components/nodes/node-status-badge";
 import { AppShell } from "@/components/layout/app-shell";
-import { useNode, useNodeHealth, useDeleteNode, useTestNode } from "@/hooks/use-nodes";
+import { useNode, useNodeHealth, useDeleteNode, useTestNode, useUpdateNode } from "@/hooks/use-nodes";
 import { useDockerRestart } from "@/hooks/use-docker";
+import type { Node } from "@/types/node";
 
 const managementLinks = [
   { href: "proxies", label: "Proxy Rules", icon: Globe, description: "Manage reverse proxy rules" },
@@ -38,6 +55,288 @@ const managementLinks = [
   { href: "files", label: "Files", icon: Folder, description: "Browse and edit config files" },
 ];
 
+function EditNodeDialog({
+  node,
+  open,
+  onOpenChange,
+}: {
+  node: Node;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const updateNode = useUpdateNode();
+  const [form, setForm] = useState({
+    name: "",
+    host: "",
+    port: "",
+    protocol: "https",
+    connectionMode: "direct",
+    authMethod: "session",
+    username: "",
+    password: "",
+    agentToken: "",
+    agentPort: "9191",
+    agentTls: false,
+    location: "",
+    tags: "",
+  });
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (open && node) {
+      setForm({
+        name: node.name,
+        host: node.host,
+        port: String(node.port),
+        protocol: node.protocol,
+        connectionMode: node.connectionMode,
+        authMethod: node.authMethod,
+        username: "",
+        password: "",
+        agentToken: node.agentToken || "",
+        agentPort: String(node.agentPort),
+        agentTls: node.agentTls,
+        location: node.location || "",
+        tags: node.tags.join(", "),
+      });
+      setError("");
+    }
+  }, [open, node]);
+
+  const updateField = (field: string, value: string | boolean) => {
+    setForm((f) => ({ ...f, [field]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    try {
+      await updateNode.mutateAsync({
+        id: node.id,
+        name: form.name,
+        host: form.host,
+        port: parseInt(form.port),
+        protocol: form.protocol,
+        connectionMode: form.connectionMode,
+        authMethod: form.authMethod,
+        username: form.username || undefined,
+        password: form.password || undefined,
+        agentToken: form.agentToken || undefined,
+        agentPort: parseInt(form.agentPort, 10),
+        agentTls: form.agentTls,
+        location: form.location || undefined,
+        tags: form.tags
+          ? form.tags.split(",").map((t) => t.trim()).filter(Boolean)
+          : [],
+      });
+      onOpenChange(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update node");
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Node</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/50 dark:text-red-400">
+              {error}
+            </div>
+          )}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Name</label>
+              <Input
+                value={form.name}
+                onChange={(e) => updateField("name", e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Location</label>
+              <Input
+                value={form.location}
+                onChange={(e) => updateField("location", e.target.value)}
+                placeholder="Not set"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Protocol</label>
+              <Select
+                value={form.protocol}
+                onValueChange={(v) => updateField("protocol", v)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="https">HTTPS</SelectItem>
+                  <SelectItem value="http">HTTP</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Host</label>
+              <Input
+                value={form.host}
+                onChange={(e) => updateField("host", e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Port</label>
+              <Input
+                type="number"
+                value={form.port}
+                onChange={(e) => updateField("port", e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Connection Mode</label>
+              <Select
+                value={form.connectionMode}
+                onValueChange={(v) => {
+                  setForm((f) => ({
+                    ...f,
+                    connectionMode: v,
+                    authMethod: v === "agent" ? "agent_key" : f.authMethod,
+                  }));
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="direct">Direct API</SelectItem>
+                  <SelectItem value="agent">Agent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Auth Method</label>
+              <Select
+                value={form.authMethod}
+                onValueChange={(v) => updateField("authMethod", v)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="session">Session (Username/Password)</SelectItem>
+                  <SelectItem value="noauth">No Auth</SelectItem>
+                  <SelectItem value="agent_key">Agent API Key</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {form.connectionMode === "agent" && (
+            <div className="space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+              <p className="text-sm font-medium">Agent Connection</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Agent Port</label>
+                  <Input
+                    type="number"
+                    value={form.agentPort}
+                    onChange={(e) => updateField("agentPort", e.target.value)}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 text-sm font-medium">
+                    <input
+                      type="checkbox"
+                      checked={form.agentTls}
+                      onChange={(e) => updateField("agentTls", e.target.checked)}
+                      className="rounded"
+                    />
+                    Agent TLS
+                  </label>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Agent API Key</label>
+                <Input
+                  value={form.agentToken}
+                  onChange={(e) => updateField("agentToken", e.target.value)}
+                  placeholder="Pre-shared agent API key"
+                />
+              </div>
+            </div>
+          )}
+
+          {form.authMethod === "session" && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Username</label>
+                <Input
+                  value={form.username}
+                  onChange={(e) => updateField("username", e.target.value)}
+                  placeholder="Leave blank to keep current"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Password</label>
+                <Input
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => updateField("password", e.target.value)}
+                  placeholder="Leave blank to keep current"
+                />
+              </div>
+            </div>
+          )}
+
+          {form.authMethod === "agent_key" && form.connectionMode !== "agent" && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Agent API Key</label>
+              <Input
+                value={form.agentToken}
+                onChange={(e) => updateField("agentToken", e.target.value)}
+                placeholder="Pre-shared agent API key"
+              />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Tags</label>
+            <Input
+              value={form.tags}
+              onChange={(e) => updateField("tags", e.target.value)}
+              placeholder="production, us-east (comma-separated)"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={updateNode.isPending}>
+              {updateNode.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function NodeDetailPage({
   params,
 }: {
@@ -50,6 +349,7 @@ export default function NodeDetailPage({
   const deleteNode = useDeleteNode();
   const testNode = useTestNode();
   const restartDocker = useDockerRestart(id);
+  const [editOpen, setEditOpen] = useState(false);
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to remove this node?")) return;
@@ -104,6 +404,14 @@ export default function NodeDetailPage({
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditOpen(true)}
+            >
+              <Pencil className="h-4 w-4" />
+              Edit
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -264,6 +572,12 @@ export default function NodeDetailPage({
           </div>
         </div>
       </div>
+
+      <EditNodeDialog
+        node={node}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
     </AppShell>
   );
 }
