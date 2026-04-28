@@ -12,6 +12,7 @@ import {
   LogOut,
   Hexagon,
   Terminal,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/bulk", label: "Bulk Operations", icon: Layers },
   { href: "/agent-install", label: "Agent Installer", icon: Terminal },
   { href: "/audit", label: "Audit Log", icon: ScrollText },
+  { href: "/settings/telegram", label: "Telegram Bot", icon: Bot },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -50,8 +52,8 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
       <nav className="flex-1 space-y-0.5 p-3">
         {navItems.map((item) => {
           const isActive =
-            item.href === "/"
-              ? pathname === "/"
+            item.href === "/" || item.href === "/settings"
+              ? pathname === item.href
               : pathname.startsWith(item.href);
 
           return (
