@@ -39,12 +39,14 @@ export class ErrorBoundary extends Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-950">
-          <AlertTriangle className="h-10 w-10 text-amber-500" />
-          <h2 className="mt-4 text-xl font-semibold">
+        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-md-outline-variant bg-md-surface p-8 text-center elevation-1">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-md-warning-container">
+            <AlertTriangle className="h-7 w-7 text-md-warning" />
+          </div>
+          <h2 className="mt-5 text-xl font-semibold text-md-on-surface">
             {this.props.fallbackTitle ?? "Something went wrong"}
           </h2>
-          <p className="mt-2 max-w-md text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-2 max-w-md text-sm text-md-on-surface-variant">
             {this.props.fallbackDescription ??
               "An unexpected error occurred while rendering this section. Try again."}
           </p>

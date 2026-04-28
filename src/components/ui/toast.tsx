@@ -24,14 +24,14 @@ const ToastViewport = React.forwardRef<
 ToastViewport.displayName = ToastPrimitives.Viewport.displayName;
 
 const toastVariants = cva(
-  "group pointer-events-auto relative flex w-full items-start gap-3 overflow-hidden rounded-lg border p-4 pr-8 shadow-lg transition-all data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=open]:slide-in-from-bottom-8 data-[state=closed]:slide-out-to-right-full data-[swipe=end]:slide-out-to-right-full",
+  "group pointer-events-auto relative flex w-full items-start gap-3 overflow-hidden rounded-2xl border p-4 pr-8 elevation-3 transition-all data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=open]:slide-in-from-bottom-8 data-[state=closed]:slide-out-to-right-full data-[swipe=end]:slide-out-to-right-full",
   {
     variants: {
       variant: {
-        success: "border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-emerald-900/50 dark:bg-emerald-900/20 dark:text-emerald-100",
-        error: "border-red-200 bg-red-50 text-red-950 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-100",
-        warning: "border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-100",
-        info: "border-blue-200 bg-blue-50 text-blue-950 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-100",
+        success: "border-md-success/20 bg-md-success-container text-md-on-success-container",
+        error: "border-md-error/20 bg-md-error-container text-md-on-error-container",
+        warning: "border-md-warning/20 bg-md-warning-container text-md-on-warning-container",
+        info: "border-md-info/20 bg-md-info-container text-md-on-info-container",
       },
     },
     defaultVariants: {
@@ -86,7 +86,7 @@ const ToastClose = React.forwardRef<
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      "absolute right-2 top-2 rounded-md p-1 opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-zinc-400",
+      "absolute right-2 top-2 rounded-lg p-1 opacity-70 transition-all hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-md-primary",
       className
     )}
     data-dialog-close

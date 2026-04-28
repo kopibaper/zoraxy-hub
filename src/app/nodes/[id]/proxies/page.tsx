@@ -45,6 +45,15 @@ import {
 } from "@/hooks/use-proxies";
 import { useNode } from "@/hooks/use-nodes";
 
+function headerRuleCount(rules: unknown): number {
+  if (Array.isArray(rules)) return rules.length;
+  if (rules && typeof rules === "object" && "UserDefinedHeaders" in rules) {
+    const headers = (rules as { UserDefinedHeaders: unknown }).UserDefinedHeaders;
+    return Array.isArray(headers) ? headers.length : 0;
+  }
+  return 0;
+}
+
 function parseTags(value: string): string[] {
   return Array.from(
     new Set(
@@ -304,8 +313,8 @@ export default function ProxiesPage({
                           {(proxy.VirtualDirectories?.length ?? 0) !== 1 ? "ies" : "y"}
                         </span>
                         <span>
-                          {proxy.HeaderRewriteRules?.length ?? 0} header rule
-                          {(proxy.HeaderRewriteRules?.length ?? 0) !== 1 ? "s" : ""}
+                          {headerRuleCount(proxy.HeaderRewriteRules)} header rule
+                          {headerRuleCount(proxy.HeaderRewriteRules) !== 1 ? "s" : ""}
                         </span>
                         {proxy.ActiveOrigins?.[0] && (
                           <span className="font-mono">

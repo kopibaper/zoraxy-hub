@@ -71,10 +71,10 @@ type TrafficOverview = SystemOverview & {
 };
 
 const STATUS_COLORS = {
-  "2xx": "#10b981",
-  "3xx": "#3b82f6",
-  "4xx": "#f59e0b",
-  "5xx": "#ef4444",
+  "2xx": "#059669",
+  "3xx": "#2563eb",
+  "4xx": "#d97706",
+  "5xx": "#dc2626",
 };
 
 function formatBytes(value: number) {
@@ -103,11 +103,30 @@ function formatLastSeen(value: string | null | undefined) {
 
 function EmptyChartState({ message }: { message: string }) {
   return (
-    <div className="flex h-[280px] items-center justify-center text-sm text-zinc-500 dark:text-zinc-400">
+    <div className="flex h-[280px] items-center justify-center text-sm text-md-on-surface-variant">
       {message}
     </div>
   );
 }
+
+const STAT_ICON_STYLES = {
+  default: {
+    bg: "bg-md-secondary-container",
+    icon: "text-md-secondary",
+  },
+  success: {
+    bg: "bg-md-success-container",
+    icon: "text-md-success",
+  },
+  warning: {
+    bg: "bg-md-warning-container",
+    icon: "text-md-warning",
+  },
+  danger: {
+    bg: "bg-md-error-container",
+    icon: "text-md-error",
+  },
+} as const;
 
 function StatCard({
   title,
@@ -120,31 +139,35 @@ function StatCard({
   icon: React.ComponentType<{ className?: string }>;
   variant?: "default" | "success" | "warning" | "danger";
 }) {
-  const colors = {
-    default: "text-zinc-600 dark:text-zinc-400",
-    success: "text-emerald-600 dark:text-emerald-400",
-    warning: "text-amber-600 dark:text-amber-400",
-    danger: "text-red-600 dark:text-red-400",
-  };
+  const style = STAT_ICON_STYLES[variant];
 
   return (
-    <Card>
-      <CardContent className="p-4">
+    <Card className="hover:elevation-2 transition-all duration-200">
+      <CardContent className="p-5">
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">{title}</p>
-            <p className="mt-1 text-2xl font-bold">{value}</p>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-md-on-surface-variant">{title}</p>
+            <p className="text-2xl font-bold tracking-tight text-md-on-surface">{value}</p>
           </div>
           <div
-            className={`flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 ${colors[variant]}`}
+            className={`flex h-11 w-11 items-center justify-center rounded-2xl ${style.bg}`}
           >
-            <Icon className="h-5 w-5" />
+            <Icon className={`h-5 w-5 ${style.icon}`} />
           </div>
         </div>
       </CardContent>
     </Card>
   );
 }
+
+const CHART_TOOLTIP_STYLE = {
+  backgroundColor: "var(--md-surface)",
+  borderColor: "var(--md-outline-variant)",
+  borderRadius: "0.75rem",
+  color: "var(--md-on-surface)",
+  boxShadow: "var(--md-elevation-3)",
+  border: "1px solid var(--md-outline-variant)",
+};
 
 export default function DashboardPage() {
   const { data: nodes } = useNodes();
@@ -250,10 +273,10 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-zinc-500 dark:text-zinc-400">
+          <h2 className="text-2xl font-bold tracking-tight text-md-on-surface">Dashboard</h2>
+          <p className="mt-1 text-md-on-surface-variant">
             Overview of all your Zoraxy instances
           </p>
         </div>
@@ -317,31 +340,31 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-2">
               <Link href="/nodes/new">
-                <Button variant="outline" className="w-full justify-start gap-2">
-                  <Server className="h-4 w-4" />
+                <Button variant="outline" className="w-full justify-start gap-3">
+                  <Server className="h-4 w-4 text-md-primary" />
                   Add New Node
-                  <ArrowRight className="ml-auto h-4 w-4" />
+                  <ArrowRight className="ml-auto h-4 w-4 text-md-on-surface-variant" />
                 </Button>
               </Link>
               <Link href="/nodes">
-                <Button variant="outline" className="w-full justify-start gap-2">
-                  <Globe className="h-4 w-4" />
+                <Button variant="outline" className="w-full justify-start gap-3">
+                  <Globe className="h-4 w-4 text-md-primary" />
                   Manage Nodes
-                  <ArrowRight className="ml-auto h-4 w-4" />
+                  <ArrowRight className="ml-auto h-4 w-4 text-md-on-surface-variant" />
                 </Button>
               </Link>
               <Link href="/templates">
-                <Button variant="outline" className="w-full justify-start gap-2">
-                  <Lock className="h-4 w-4" />
+                <Button variant="outline" className="w-full justify-start gap-3">
+                  <Lock className="h-4 w-4 text-md-primary" />
                   Config Templates
-                  <ArrowRight className="ml-auto h-4 w-4" />
+                  <ArrowRight className="ml-auto h-4 w-4 text-md-on-surface-variant" />
                 </Button>
               </Link>
               <Link href="/audit">
-                <Button variant="outline" className="w-full justify-start gap-2">
-                  <Activity className="h-4 w-4" />
+                <Button variant="outline" className="w-full justify-start gap-3">
+                  <Activity className="h-4 w-4 text-md-primary" />
                   Audit Log
-                  <ArrowRight className="ml-auto h-4 w-4" />
+                  <ArrowRight className="ml-auto h-4 w-4 text-md-on-surface-variant" />
                 </Button>
               </Link>
             </CardContent>
@@ -362,29 +385,29 @@ export default function DashboardPage() {
                   {overview.recentActivity.slice(0, 8).map((entry) => (
                     <div
                       key={entry.id}
-                      className="flex items-center justify-between text-sm"
+                      className="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-md-surface-container"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2.5">
                         <Badge
                           variant={
                             entry.result === "success" ? "success" : "danger"
                           }
-                          className="text-[10px] px-1.5"
+                          className="text-[10px] px-2"
                         >
                           {entry.result}
                         </Badge>
-                        <span className="text-zinc-700 dark:text-zinc-300">
+                        <span className="text-md-on-surface">
                           {entry.action}
                         </span>
                       </div>
-                      <span className="text-xs text-zinc-400">
+                      <span className="text-xs text-md-on-surface-variant">
                         {new Date(entry.createdAt).toLocaleString()}
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 py-4 text-center">
+                <p className="text-sm text-md-on-surface-variant py-4 text-center">
                   No recent activity
                 </p>
               )}
@@ -407,22 +430,22 @@ export default function DashboardPage() {
                 {nodes.slice(0, 5).map((node) => (
                   <div
                     key={node.id}
-                    className="rounded-lg border border-zinc-200 bg-zinc-50/60 p-3 dark:border-zinc-800 dark:bg-zinc-900/60"
+                    className="rounded-xl border border-md-outline-variant bg-md-surface-container-low p-4 transition-all duration-200 hover:elevation-1"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2.5">
                         <div
-                          className={`h-2.5 w-2.5 rounded-full ${
+                          className={`h-2.5 w-2.5 rounded-full ring-2 ring-offset-2 ring-offset-md-surface-container-low ${
                             node.status === "online"
-                              ? "bg-emerald-500"
+                              ? "bg-md-success ring-md-success/30"
                               : node.status === "degraded"
-                              ? "bg-amber-500"
-                              : "bg-red-500"
+                              ? "bg-md-warning ring-md-warning/30"
+                              : "bg-md-error ring-md-error/30"
                           }`}
                         />
                         <div>
-                          <p className="text-sm font-medium">{node.name}</p>
-                          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                          <p className="text-sm font-semibold text-md-on-surface">{node.name}</p>
+                          <p className="text-xs text-md-on-surface-variant">
                             {node.host}:{node.port}
                           </p>
                         </div>
@@ -441,7 +464,7 @@ export default function DashboardPage() {
                       </Badge>
                     </div>
 
-                    <div className="mt-3 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+                    <div className="mt-3 flex items-center justify-between text-xs text-md-on-surface-variant">
                       <span>Last seen: {formatLastSeen(node.lastSeen)}</span>
                       {node.location && (
                         <Badge variant="secondary" className="text-[10px]">
@@ -471,32 +494,27 @@ export default function DashboardPage() {
               <CardTitle className="text-base">Request Distribution by Country</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border border-zinc-200 bg-zinc-100/70 p-3 dark:border-zinc-800 dark:bg-zinc-900">
+              <div className="rounded-xl bg-md-surface-container-low p-4">
                 {requestDistribution.length > 0 ? (
                   <ResponsiveContainer width="100%" height={280}>
                     <BarChart data={requestDistribution} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" opacity={0.3} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--md-outline-variant)" opacity={0.5} />
                       <XAxis
                         dataKey="country"
-                        tick={{ fill: "#a1a1aa", fontSize: 12 }}
-                        axisLine={{ stroke: "#52525b" }}
-                        tickLine={{ stroke: "#52525b" }}
+                        tick={{ fill: "var(--md-on-surface-variant)", fontSize: 12 }}
+                        axisLine={{ stroke: "var(--md-outline-variant)" }}
+                        tickLine={{ stroke: "var(--md-outline-variant)" }}
                       />
                       <YAxis
-                        tick={{ fill: "#a1a1aa", fontSize: 12 }}
-                        axisLine={{ stroke: "#52525b" }}
-                        tickLine={{ stroke: "#52525b" }}
+                        tick={{ fill: "var(--md-on-surface-variant)", fontSize: 12 }}
+                        axisLine={{ stroke: "var(--md-outline-variant)" }}
+                        tickLine={{ stroke: "var(--md-outline-variant)" }}
                       />
                       <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#18181b",
-                          borderColor: "#3f3f46",
-                          borderRadius: "0.5rem",
-                          color: "#f4f4f5",
-                        }}
-                        cursor={{ fill: "rgba(113, 113, 122, 0.2)" }}
+                        contentStyle={CHART_TOOLTIP_STYLE}
+                        cursor={{ fill: "var(--md-primary-container)", opacity: 0.3 }}
                       />
-                      <Bar dataKey="requests" fill="#10b981" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="requests" fill="var(--md-primary)" radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -511,7 +529,7 @@ export default function DashboardPage() {
               <CardTitle className="text-base">Status Code Distribution</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="rounded-lg border border-zinc-200 bg-zinc-100/70 p-3 dark:border-zinc-800 dark:bg-zinc-900">
+              <div className="rounded-xl bg-md-surface-container-low p-4">
                 {statusDistribution.length > 0 ? (
                   <ResponsiveContainer width="100%" height={280}>
                     <PieChart>
@@ -523,7 +541,8 @@ export default function DashboardPage() {
                         cy="50%"
                         innerRadius={58}
                         outerRadius={95}
-                        paddingAngle={2}
+                        paddingAngle={3}
+                        strokeWidth={0}
                       >
                         {statusDistribution.map((entry) => (
                           <Cell
@@ -533,12 +552,7 @@ export default function DashboardPage() {
                         ))}
                       </Pie>
                       <Tooltip
-                        contentStyle={{
-                          backgroundColor: "#18181b",
-                          borderColor: "#3f3f46",
-                          borderRadius: "0.5rem",
-                          color: "#f4f4f5",
-                        }}
+                        contentStyle={CHART_TOOLTIP_STYLE}
                       />
                       <Legend />
                     </PieChart>
@@ -556,34 +570,29 @@ export default function DashboardPage() {
             <CardTitle className="text-base">Bandwidth by Node (RX / TX)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="rounded-lg border border-zinc-200 bg-zinc-100/70 p-3 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="rounded-xl bg-md-surface-container-low p-4">
               {bandwidthByNode.length > 0 ? (
                 <ResponsiveContainer width="100%" height={320}>
                   <BarChart data={bandwidthByNode} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" opacity={0.3} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--md-outline-variant)" opacity={0.5} />
                     <XAxis
                       dataKey="name"
-                      tick={{ fill: "#a1a1aa", fontSize: 12 }}
-                      axisLine={{ stroke: "#52525b" }}
-                      tickLine={{ stroke: "#52525b" }}
+                      tick={{ fill: "var(--md-on-surface-variant)", fontSize: 12 }}
+                      axisLine={{ stroke: "var(--md-outline-variant)" }}
+                      tickLine={{ stroke: "var(--md-outline-variant)" }}
                     />
                     <YAxis
-                      tick={{ fill: "#a1a1aa", fontSize: 12 }}
-                      axisLine={{ stroke: "#52525b" }}
-                      tickLine={{ stroke: "#52525b" }}
+                      tick={{ fill: "var(--md-on-surface-variant)", fontSize: 12 }}
+                      axisLine={{ stroke: "var(--md-outline-variant)" }}
+                      tickLine={{ stroke: "var(--md-outline-variant)" }}
                     />
                     <Tooltip
                       formatter={(value) => formatBytes(Number(value ?? 0))}
-                      contentStyle={{
-                        backgroundColor: "#18181b",
-                        borderColor: "#3f3f46",
-                        borderRadius: "0.5rem",
-                        color: "#f4f4f5",
-                      }}
+                      contentStyle={CHART_TOOLTIP_STYLE}
                     />
                     <Legend />
-                    <Bar dataKey="rx" name="RX" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="tx" name="TX" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="rx" name="RX" fill="var(--md-info)" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="tx" name="TX" fill="var(--md-tertiary)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (

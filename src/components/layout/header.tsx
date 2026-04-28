@@ -34,18 +34,18 @@ export function Header({ onMenuClick, isMobileMenuOpen = false }: HeaderProps) {
   const title = getPageTitle(pathname);
 
   return (
-    <header className="flex h-14 items-center border-b border-zinc-200 px-6 dark:border-zinc-800">
+    <header className="flex h-16 items-center border-b border-md-outline-variant bg-md-surface px-6">
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        className="mr-2 md:hidden"
+        className="mr-3 md:hidden"
         aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
         onClick={onMenuClick}
       >
         {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </Button>
-      <h1 className="text-lg font-semibold">{title}</h1>
+      <h1 className="text-lg font-semibold text-md-on-surface">{title}</h1>
     </header>
   );
 }

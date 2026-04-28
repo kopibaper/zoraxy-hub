@@ -67,9 +67,11 @@ export async function POST(request: NextRequest) {
       flags.push(`--version "${body.version}"`);
     }
 
+    const agentPort = body.agentPort ?? 9191;
     const flagStr = flags.join(" \\\n    ");
-    const oneLineCommand = `curl -fsSL ${INSTALL_SCRIPT_URL} | sudo bash -s -- ${flags.join(" ")}`;
-    const multiLineCommand = `curl -fsSL ${INSTALL_SCRIPT_URL} | sudo bash -s -- \\\n    ${flagStr}`;
+    const ufwCmd = `sudo ufw allow ${agentPort}/tcp comment "ZoraxyHub Agent" 2>/dev/null || true`;
+    const oneLineCommand = `curl -fsSL ${INSTALL_SCRIPT_URL} | sudo bash -s -- ${flags.join(" ")} && ${ufwCmd}`;
+    const multiLineCommand = `curl -fsSL ${INSTALL_SCRIPT_URL} | sudo bash -s -- \\\n    ${flagStr}\n\n# Allow agent port through firewall\n${ufwCmd}`;
 
     return Response.json({
       success: true,

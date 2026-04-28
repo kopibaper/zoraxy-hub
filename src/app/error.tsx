@@ -17,12 +17,14 @@ export default function Error({
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
-      <AlertTriangle className="h-12 w-12 text-amber-500" />
-      <h2 className="mt-4 text-2xl font-bold tracking-tight">Something went wrong</h2>
-      <p className="mt-2 max-w-md text-sm text-zinc-500 dark:text-zinc-400">
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-md-warning-container">
+        <AlertTriangle className="h-8 w-8 text-md-warning" />
+      </div>
+      <h2 className="mt-5 text-2xl font-bold tracking-tight text-md-on-surface">Something went wrong</h2>
+      <p className="mt-2 max-w-md text-sm text-md-on-surface-variant">
         We hit an unexpected issue while loading this page.
       </p>
-      <Button className="mt-5" onClick={() => unstable_retry()}>
+      <Button className="mt-6" onClick={() => unstable_retry()}>
         Retry
       </Button>
     </div>

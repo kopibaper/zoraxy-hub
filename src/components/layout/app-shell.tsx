@@ -29,8 +29,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   if (!mounted || isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-300 border-t-zinc-900 dark:border-zinc-700 dark:border-t-zinc-100" />
+      <div className="flex h-screen items-center justify-center bg-md-surface-dim">
+        <div className="h-10 w-10 spinner" />
       </div>
     );
   }
@@ -38,7 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-md-surface-dim">
       <Sidebar
         mobileOpen={mobileSidebarOpen}
         onMobileClose={() => setMobileSidebarOpen(false)}
@@ -48,7 +48,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           isMobileMenuOpen={mobileSidebarOpen}
           onMenuClick={() => setMobileSidebarOpen((open) => !open)}
         />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-5 md:p-8">{children}</main>
       </div>
     </div>
   );

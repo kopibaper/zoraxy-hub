@@ -466,6 +466,13 @@ export default function AgentInstallerPage() {
                     </li>
                     <li>Installs a systemd service</li>
                     <li>Starts the agent automatically</li>
+                    <li>
+                      Opens port{" "}
+                      <code className="rounded bg-blue-100 px-1 py-0.5 font-mono text-xs dark:bg-blue-900/50">
+                        {config.agentPort}
+                      </code>{" "}
+                      in UFW firewall
+                    </li>
                   </ol>
                 </div>
               </CardContent>

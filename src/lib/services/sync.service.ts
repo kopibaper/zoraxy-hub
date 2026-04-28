@@ -1,10 +1,11 @@
+import JSZip from "jszip";
 import { db } from "../db";
 import { nodes } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { NotFoundError } from "../errors";
 import { getNode, getNodeConnector } from "./node.service";
 import { logAudit } from "./audit.service";
-import type { NodeSystemInfo } from "../connectors/interface";
+import type { INodeConnector, NodeSystemInfo, FileEntry } from "../connectors/interface";
 import type { ZoraxyCertInfo, ZoraxyProxyEntry } from "../zoraxy/types";
 
 export interface NodeConfig {
@@ -150,6 +151,26 @@ function toStreamConfig(input: unknown): Record<string, unknown> | null {
   };
 }
 
+async function safeCall<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await fn();
+  } catch {
+    return fallback;
+  }
+}
+
+const EMPTY_SYSTEM_INFO: NodeSystemInfo = {
+  zoraxyVersion: null,
+  nodeUUID: null,
+  development: null,
+  bootTime: null,
+  enableSshLoopback: null,
+  zerotierConnected: null,
+  uptime: null,
+  cpu: null,
+  memory: null,
+};
+
 export async function exportNodeConfig(nodeId: string): Promise<NodeConfig> {
   const { node, connector } = await getConnectorForNode(nodeId);
 
@@ -161,12 +182,12 @@ export async function exportNodeConfig(nodeId: string): Promise<NodeConfig> {
     redirects,
     systemInfo,
   ] = await Promise.all([
-    connector.listProxyRules(),
-    connector.listCerts(),
-    connector.listAccessRules(),
-    connector.listStreamProxies(),
-    connector.listRedirects(),
-    connector.getSystemInfo(),
+    safeCall(() => connector.listProxyRules(), []),
+    safeCall(() => connector.listCerts(), []),
+    safeCall(() => connector.listAccessRules(), []),
+    safeCall(() => connector.listStreamProxies(), []),
+    safeCall(() => connector.listRedirects(), []),
+    safeCall(() => connector.getSystemInfo(), EMPTY_SYSTEM_INFO),
   ]);
 
   const exported = {
@@ -190,6 +211,160 @@ export async function exportNodeConfig(nodeId: string): Promise<NodeConfig> {
   });
 
   return exported;
+}
+
+// ---------------------------------------------------------------------------
+// Zip export / import — bundles config.json + raw config files
+// ---------------------------------------------------------------------------
+
+async function collectFiles(
+  connector: INodeConnector,
+  dirPath: string,
+  collected: Array<{ path: string; content: string }>,
+  maxDepth = 5,
+  depth = 0
+): Promise<void> {
+  if (depth > maxDepth) return;
+  if (!connector.listConfigFiles || !connector.readConfigFile) return;
+
+  let entries: FileEntry[];
+  try {
+    entries = await connector.listConfigFiles(dirPath);
+  } catch {
+    return;
+  }
+
+  for (const entry of entries) {
+    const fullPath = dirPath === "." ? entry.name : `${dirPath}/${entry.name}`;
+    if (entry.isDirectory) {
+      await collectFiles(connector, fullPath, collected, maxDepth, depth + 1);
+    } else {
+      try {
+        const content = await connector.readConfigFile(fullPath);
+        collected.push({ path: fullPath, content });
+      } catch {
+        // skip unreadable files
+      }
+    }
+  }
+}
+
+export async function exportNodeConfigZip(nodeId: string): Promise<Buffer> {
+  const { node, connector } = await getConnectorForNode(nodeId);
+
+  // 1. Gather the structured config (same as JSON export)
+  const [
+    proxyRules,
+    certs,
+    accessRules,
+    streamProxies,
+    redirects,
+    systemInfo,
+  ] = await Promise.all([
+    safeCall(() => connector.listProxyRules(), []),
+    safeCall(() => connector.listCerts(), []),
+    safeCall(() => connector.listAccessRules(), []),
+    safeCall(() => connector.listStreamProxies(), []),
+    safeCall(() => connector.listRedirects(), []),
+    safeCall(() => connector.getSystemInfo(), EMPTY_SYSTEM_INFO),
+  ]);
+
+  const configJson: NodeConfig = {
+    proxyRules,
+    certs,
+    accessRules,
+    streamProxies,
+    redirects,
+    systemInfo,
+    exportedAt: new Date().toISOString(),
+    nodeId: node.id,
+    nodeName: node.name,
+  };
+
+  // 2. Build the zip
+  const zip = new JSZip();
+  zip.file("config.json", JSON.stringify(configJson, null, 2));
+
+  // 3. Collect raw config files from the node (agent-mode only)
+  if (connector.supportsFileAccess?.()) {
+    const files: Array<{ path: string; content: string }> = [];
+    await collectFiles(connector, ".", files);
+    for (const file of files) {
+      zip.file(`files/${file.path}`, file.content);
+    }
+  }
+
+  const zipBuffer = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
+
+  await logAudit("sync.export-zip", "node", node.id, node.id, {
+    nodeName: node.name,
+    proxyRules: proxyRules.length,
+    certs: certs.length,
+    streams: streamProxies.length,
+    redirects: redirects.length,
+    hasFiles: connector.supportsFileAccess?.() ?? false,
+  });
+
+  return zipBuffer;
+}
+
+export interface ZipImportResult {
+  config: ImportResult;
+  files: { written: number; failed: number; errors: string[] };
+}
+
+export async function importNodeConfigZip(
+  targetNodeId: string,
+  zipData: Buffer | ArrayBuffer,
+  options: ImportOptions
+): Promise<ZipImportResult> {
+  const zip = await JSZip.loadAsync(zipData);
+
+  // 1. Extract config.json
+  const configFile = zip.file("config.json");
+  if (!configFile) {
+    throw new Error("Invalid zip: missing config.json");
+  }
+  const configText = await configFile.async("string");
+  const config = JSON.parse(configText) as NodeConfig;
+
+  // 2. Run the standard config import
+  const configResult = await importNodeConfig(targetNodeId, config, options);
+
+  // 3. Restore raw config files if present and connector supports it
+  const filesResult = { written: 0, failed: 0, errors: [] as string[] };
+  const { connector } = await getConnectorForNode(targetNodeId);
+
+  if (connector.supportsFileAccess?.() && connector.writeConfigFile) {
+    const fileEntries = Object.keys(zip.files).filter(
+      (name) => name.startsWith("files/") && !zip.files[name].dir
+    );
+
+    for (const zipPath of fileEntries) {
+      const relativePath = zipPath.slice("files/".length);
+      try {
+        const content = await zip.files[zipPath].async("string");
+        await connector.writeConfigFile(relativePath, content);
+        filesResult.written += 1;
+      } catch (error) {
+        filesResult.failed += 1;
+        filesResult.errors.push(
+          `File '${relativePath}' failed: ${error instanceof Error ? error.message : "Unknown error"}`
+        );
+      }
+    }
+  }
+
+  await logAudit("sync.import-zip", "node", targetNodeId, targetNodeId, {
+    sourceNodeId: config.nodeId,
+    sourceNodeName: config.nodeName,
+    configSuccess: configResult.success,
+    configFailed: configResult.failed,
+    filesWritten: filesResult.written,
+    filesFailed: filesResult.failed,
+  });
+
+  return { config: configResult, files: filesResult };
 }
 
 export async function compareNodes(

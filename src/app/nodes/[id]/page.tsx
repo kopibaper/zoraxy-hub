@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   Trash2,
   RefreshCw,
+  RotateCcw,
   Globe,
   Shield,
   Radio,
@@ -23,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { NodeStatusBadge } from "@/components/nodes/node-status-badge";
 import { AppShell } from "@/components/layout/app-shell";
 import { useNode, useNodeHealth, useDeleteNode, useTestNode } from "@/hooks/use-nodes";
+import { useDockerRestart } from "@/hooks/use-docker";
 
 const managementLinks = [
   { href: "proxies", label: "Proxy Rules", icon: Globe, description: "Manage reverse proxy rules" },
@@ -47,6 +49,7 @@ export default function NodeDetailPage({
   const { data: health } = useNodeHealth(id);
   const deleteNode = useDeleteNode();
   const testNode = useTestNode();
+  const restartDocker = useDockerRestart(id);
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to remove this node?")) return;
@@ -112,6 +115,19 @@ export default function NodeDetailPage({
               />
               Test
             </Button>
+            {node.connectionMode !== "direct" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => restartDocker.mutate()}
+                disabled={restartDocker.isPending}
+              >
+                <RotateCcw
+                  className={`h-4 w-4 ${restartDocker.isPending ? "animate-spin" : ""}`}
+                />
+                Restart Docker
+              </Button>
+            )}
             <Button
               variant="destructive"
               size="sm"
