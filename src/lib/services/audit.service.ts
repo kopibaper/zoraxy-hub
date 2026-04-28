@@ -2,6 +2,7 @@ import { db } from "../db";
 import { auditLog } from "../db/schema";
 import { ulid } from "ulid";
 import { desc, eq, and, like, sql } from "drizzle-orm";
+import { notifyAuditEvent } from "./telegram.service";
 
 type EntityType = "node" | "proxy" | "cert" | "template" | "system";
 type AuditResult = "success" | "failure";
@@ -23,6 +24,10 @@ export async function logAudit(
     details: details ? JSON.stringify(details) : null,
     result,
   });
+
+  notifyAuditEvent(action, entityType, entityId, result, details).catch(
+    () => {}
+  );
 }
 
 export async function getAuditLogs(options: {

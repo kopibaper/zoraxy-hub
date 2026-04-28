@@ -5,6 +5,11 @@ import { getConnector } from "../connectors/factory";
 import type { NodeStatus } from "@/types/node";
 import type { ZoraxyNetstatResponse, ZoraxyStatsResponse } from "../zoraxy/types";
 import { ulid } from "ulid";
+import {
+  notifyNodeStatusChange,
+  notifyCertExpiry,
+  getTelegramConfig,
+} from "./telegram.service";
 
 export interface NodeHealthPollResult {
   id: string;
@@ -111,7 +116,14 @@ export async function checkAllNodesHealth(): Promise<
         updates.zoraxyVersion = zoraxyVersion;
       }
 
+      const oldStatus = (node.status as NodeStatus) || "unknown";
       await db.update(nodes).set(updates).where(eq(nodes.id, node.id));
+
+      if (oldStatus !== status) {
+        notifyNodeStatusChange(node.name, node.id, oldStatus, status).catch(
+          () => {}
+        );
+      }
 
       await storeSnapshot(node.id, {
         status,
@@ -130,4 +142,57 @@ export async function checkAllNodesHealth(): Promise<
       };
     })
   );
+
+  checkCertExpiry(results).catch(() => {});
+
+  return results;
+}
+
+async function checkCertExpiry(
+  pollResults: NodeHealthPollResult[]
+): Promise<void> {
+  const config = await getTelegramConfig();
+  if (!config.enabled || !config.notifyCertExpiry) return;
+
+  const onlineNodes = pollResults.filter((r) => r.status === "online");
+  if (onlineNodes.length === 0) return;
+
+  const allNodeRows = await db.select().from(nodes);
+  const nodeMap = new Map(allNodeRows.map((n) => [n.id, n]));
+
+  for (const result of onlineNodes) {
+    const nodeRow = nodeMap.get(result.id);
+    if (!nodeRow) continue;
+
+    try {
+      const connector = getConnector({
+        id: nodeRow.id,
+        host: nodeRow.host,
+        port: nodeRow.port,
+        protocol: nodeRow.protocol as "http" | "https",
+        connectionMode: nodeRow.connectionMode as "direct" | "agent",
+        authMethod: nodeRow.authMethod as "session" | "noauth" | "agent_key",
+        credentials: nodeRow.credentials,
+        agentToken: nodeRow.agentToken,
+        agentPort: nodeRow.agentPort ?? 9191,
+        agentTls: nodeRow.agentTls ?? false,
+      });
+
+      const certs = await connector.listCerts();
+      for (const cert of certs) {
+        if (
+          cert.RemainingDays !== undefined &&
+          cert.RemainingDays !== null &&
+          cert.RemainingDays <= config.certExpiryDays
+        ) {
+          await notifyCertExpiry(
+            result.name,
+            cert.Domain || "unknown",
+            cert.RemainingDays
+          );
+        }
+      }
+    } catch {
+    }
+  }
 }
