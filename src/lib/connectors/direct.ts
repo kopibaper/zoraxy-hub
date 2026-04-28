@@ -212,7 +212,10 @@ export class DirectConnector implements INodeConnector {
         zerotierConnected: info.ZerotierConnected ?? null,
         uptime: computedUptime,
         cpu: null,
+        cpuCount: null,
         memory: null,
+        memoryTotal: null,
+        memoryUsed: null,
       };
     } catch {
       return {
@@ -224,7 +227,10 @@ export class DirectConnector implements INodeConnector {
         zerotierConnected: null,
         uptime: null,
         cpu: null,
+        cpuCount: null,
         memory: null,
+        memoryTotal: null,
+        memoryUsed: null,
       };
     }
   }

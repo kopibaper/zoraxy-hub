@@ -168,7 +168,10 @@ const EMPTY_SYSTEM_INFO: NodeSystemInfo = {
   zerotierConnected: null,
   uptime: null,
   cpu: null,
+  cpuCount: null,
   memory: null,
+  memoryTotal: null,
+  memoryUsed: null,
 };
 
 export async function exportNodeConfig(nodeId: string): Promise<NodeConfig> {

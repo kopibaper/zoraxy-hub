@@ -16,7 +16,10 @@ export interface NodeSystemInfo {
   zerotierConnected: boolean | null;
   uptime: number | null;
   cpu: number | null;
+  cpuCount: number | null;
   memory: number | null;
+  memoryTotal: number | null;
+  memoryUsed: number | null;
 }
 
 export interface DockerStatus {

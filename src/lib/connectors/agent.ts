@@ -361,6 +361,10 @@ export class AgentConnector implements INodeConnector {
 
       const bootTime = typeof zoraxyInfo.BootTime === "number" ? zoraxyInfo.BootTime : null;
 
+      const memTotal = vpsInfo?.memoryTotal ?? null;
+      const memFree = vpsInfo?.memoryFree ?? null;
+      const memUsed = memTotal != null && memFree != null ? memTotal - memFree : null;
+
       return {
         zoraxyVersion: typeof zoraxyInfo.Version === "string" ? zoraxyInfo.Version : null,
         nodeUUID: typeof zoraxyInfo.NodeUUID === "string" ? zoraxyInfo.NodeUUID : null,
@@ -372,7 +376,10 @@ export class AgentConnector implements INodeConnector {
           vpsInfo?.uptimeSeconds ??
           (bootTime ? Math.max(0, Math.floor(Date.now() / 1000) - bootTime) : null),
         cpu: vpsInfo?.cpuUsagePercent ?? null,
+        cpuCount: vpsInfo?.cpuCount ?? null,
         memory: vpsInfo?.memoryUsedPercent ?? null,
+        memoryTotal: memTotal,
+        memoryUsed: memUsed,
       };
     } catch {
       return {
@@ -384,7 +391,10 @@ export class AgentConnector implements INodeConnector {
         zerotierConnected: null,
         uptime: null,
         cpu: null,
+        cpuCount: null,
         memory: null,
+        memoryTotal: null,
+        memoryUsed: null,
       };
     }
   }
