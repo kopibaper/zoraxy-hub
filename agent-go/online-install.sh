@@ -6,7 +6,7 @@ set -e
 # Downloads the latest binary from GitHub and sets up systemd.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/kopibaper/zoraxy-hub/main/agent-go/online-install.sh | sudo bash -s -- \
+#   curl -fsSL https://raw.githubusercontent.com/kopibaper/zoraxy-hub/refs/heads/master/agent-go/online-install.sh | sudo bash -s -- \
 #     --api-key "zhub_ak_..." \
 #     --agent-port 9191 \
 #     --zoraxy-host localhost \

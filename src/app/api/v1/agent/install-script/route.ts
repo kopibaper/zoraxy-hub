@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/auth/middleware";
 import { errorResponse, ValidationError } from "@/lib/errors";
 
 const INSTALL_SCRIPT_URL =
-  "https://raw.githubusercontent.com/kopibaper/zoraxy-hub/main/agent-go/online-install.sh";
+  "https://raw.githubusercontent.com/kopibaper/zoraxy-hub/refs/heads/master/agent-go/online-install.sh";
 
 interface InstallScriptInput {
   apiKey: string;
