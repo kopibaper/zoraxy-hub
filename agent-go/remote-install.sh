@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
 # Zoraxy Agent — Remote Installer
-# One-liner: curl -fsSL https://raw.githubusercontent.com/kopibaper/zoraxy-hub/main/agent-go/remote-install.sh | bash
+# One-liner: curl -fsSL https://raw.githubusercontent.com/kopibaper/zoraxy-hub/master/agent-go/remote-install.sh | bash
 #
 # Environment variables (all optional — prompted interactively if missing):
 #   ZORAXY_API_KEY        – API key for ZoraxyHub (zhub_ak_...)
