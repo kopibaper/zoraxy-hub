@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Server, MapPin, Clock, Tag } from "lucide-react";
+import { Server, MapPin, Clock, Tag, Cpu, MemoryStick } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { NodeStatusBadge } from "./node-status-badge";
 import { Badge } from "@/components/ui/badge";
 import type { Node } from "@/types/node";
+import type { NodeStats } from "@/hooks/use-nodes";
 
 function timeAgo(dateStr: string | null): string {
   if (!dateStr) return "Never";
@@ -19,7 +20,87 @@ function timeAgo(dateStr: string | null): string {
   return `${days}d ago`;
 }
 
-export function NodeCard({ node }: { node: Node }) {
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(0)} KB`;
+  const mb = kb / 1024;
+  if (mb < 1024) return `${mb.toFixed(0)} MB`;
+  const gb = mb / 1024;
+  return `${gb.toFixed(1)} GB`;
+}
+
+function UsageBar({
+  label,
+  icon: Icon,
+  value,
+  detail,
+}: {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  value: number | null;
+  detail?: string;
+}) {
+  if (value === null) {
+    return (
+      <div className="flex items-center gap-2">
+        <Icon className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">{label}</span>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500">—</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800" />
+        </div>
+      </div>
+    );
+  }
+
+  const pct = Math.min(100, Math.max(0, value));
+  const color =
+    pct >= 90
+      ? "bg-red-500"
+      : pct >= 70
+        ? "bg-amber-500"
+        : "bg-emerald-500";
+
+  return (
+    <div className="flex items-center gap-2">
+      <Icon className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500 shrink-0" />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">{label}</span>
+          <span className="text-xs font-medium tabular-nums">
+            {pct.toFixed(1)}%
+            {detail && (
+              <span className="text-zinc-400 dark:text-zinc-500 ml-1">
+                {detail}
+              </span>
+            )}
+          </span>
+        </div>
+        <div className="h-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${color}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getCpuDetail(stats?: NodeStats): string | undefined {
+  if (!stats?.cpuCount) return undefined;
+  return `(${stats.cpuCount} cores)`;
+}
+
+function getMemDetail(stats?: NodeStats): string | undefined {
+  if (stats?.memoryUsed == null || stats?.memoryTotal == null) return undefined;
+  return `(${formatBytes(stats.memoryUsed)} / ${formatBytes(stats.memoryTotal)})`;
+}
+
+export function NodeCard({ node, stats }: { node: Node; stats?: NodeStats }) {
   return (
     <Link href={`/nodes/${node.id}`}>
       <Card className="transition-colors hover:border-zinc-300 dark:hover:border-zinc-700">
@@ -39,7 +120,22 @@ export function NodeCard({ node }: { node: Node }) {
             <NodeStatusBadge status={node.status} />
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
+          <div className="mt-4 space-y-2">
+            <UsageBar
+              label="CPU"
+              icon={Cpu}
+              value={stats?.cpu ?? null}
+              detail={getCpuDetail(stats)}
+            />
+            <UsageBar
+              label="MEM"
+              icon={MemoryStick}
+              value={stats?.memory ?? null}
+              detail={getMemDetail(stats)}
+            />
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
             {node.location && (
               <span className="flex items-center gap-1">
                 <MapPin className="h-3 w-3" />

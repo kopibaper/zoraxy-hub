@@ -74,6 +74,26 @@ export function useDeleteNode() {
   });
 }
 
+export interface NodeStats {
+  nodeId: string;
+  cpu: number | null;
+  cpuCount: number | null;
+  memory: number | null;
+  memoryTotal: number | null;
+  memoryUsed: number | null;
+  uptime: number | null;
+}
+
+export function useNodesStats(intervalMs = 10000) {
+  const api = useApi();
+
+  return useQuery({
+    queryKey: ["nodes", "stats"],
+    queryFn: () => api.get<NodeStats[]>("/api/v1/nodes/stats"),
+    refetchInterval: intervalMs,
+  });
+}
+
 export function useTestNode() {
   const api = useApi();
 

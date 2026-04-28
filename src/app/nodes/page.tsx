@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input";
 import { AppShell } from "@/components/layout/app-shell";
 import { NodeCard } from "@/components/nodes/node-card";
 import { EmptyState } from "@/components/shared/empty-state";
-import { useNodes } from "@/hooks/use-nodes";
+import { useNodes, useNodesStats } from "@/hooks/use-nodes";
 
 export default function NodesPage() {
   const { data: nodes, isLoading } = useNodes();
+  const { data: stats } = useNodesStats(10000);
   const [search, setSearch] = useState("");
 
   const filtered = nodes?.filter(
@@ -62,7 +63,11 @@ export default function NodesPage() {
         ) : filtered && filtered.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((node) => (
-              <NodeCard key={node.id} node={node} />
+              <NodeCard
+                key={node.id}
+                node={node}
+                stats={stats?.find((s) => s.nodeId === node.id)}
+              />
             ))}
           </div>
         ) : (
